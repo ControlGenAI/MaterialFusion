@@ -1,8 +1,5 @@
 .ipynb_checkpoints/
 **/__pycache__
-**/**.png
-**/**.jpg
-**/**.jpeg
 /cache_directory
 /control_v11f1p_sd15_depth
 /logs
@@ -12,7 +9,10 @@
 /src
 /stable-diffusion-v1-5
 /cache_directory
+/test
 u2net.onnx
+run_two_photos.sh
+two_photos_gen.py
 
 
 
