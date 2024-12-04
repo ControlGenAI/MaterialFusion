@@ -1,0 +1,12 @@
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: FuzzyTM in /home/mdnikolaev/.local/lib/python3.10/site-packages (2.0.9)
+Requirement already satisfied: numpy in /home/mdnikolaev/.local/lib/python3.10/site-packages (from FuzzyTM) (1.24.4)
+Requirement already satisfied: pandas in /home/mdnikolaev/.local/lib/python3.10/site-packages (from FuzzyTM) (1.5.3)
+Requirement already satisfied: scipy in /home/mdnikolaev/.local/lib/python3.10/site-packages (from FuzzyTM) (1.10.1)
+Requirement already satisfied: pyfume in /home/mdnikolaev/.local/lib/python3.10/site-packages (from FuzzyTM) (0.3.4)
+Requirement already satisfied: python-dateutil>=2.8.1 in /home/mdnikolaev/.local/lib/python3.10/site-packages (from pandas->FuzzyTM) (2.9.0.post0)
+Requirement already satisfied: pytz>=2020.1 in /home/mdnikolaev/.local/lib/python3.10/site-packages (from pandas->FuzzyTM) (2024.1)
+Requirement already satisfied: simpful==2.12.0 in /home/mdnikolaev/.local/lib/python3.10/site-packages (from pyfume->FuzzyTM) (2.12.0)
+Requirement already satisfied: fst-pso==1.8.1 in /home/mdnikolaev/.local/lib/python3.10/site-packages (from pyfume->FuzzyTM) (1.8.1)
+Requirement already satisfied: miniful in /home/mdnikolaev/.local/lib/python3.10/site-packages (from fst-pso==1.8.1->pyfume->FuzzyTM) (0.0.6)
+Requirement already satisfied: six>=1.5 in /home/mdnikolaev/.local/lib/python3.10/site-packages (from python-dateutil>=2.8.1->pandas->FuzzyTM) (1.16.0)
