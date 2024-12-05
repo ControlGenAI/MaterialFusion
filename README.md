@@ -7,11 +7,15 @@
 
 ## Setup
 
-We ran our code with Python 3.8.5, PyTorch 2.0.1, Diffuser 0.29.1 on NVIDIA V100 GPU with 40GB RAM.
+We ran our code with Python 3.8.5, PyTorch 2.0.1, Diffusers 0.29.1 on NVIDIA V100 GPU with 40GB RAM.
 
 In order to setup the environment, run:
 ```
+git lfs install
+
 conda env create -f material_fusion_env.yaml
+
+git clone https://huggingface.co/h94/IP-Adapter 
 ```
 Conda environment `material_fusion` will be created and you can use it.
 
