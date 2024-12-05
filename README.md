@@ -13,9 +13,9 @@ In order to setup the environment, run:
 ```
 git lfs install
 
-conda env create -f material_fusion_env.yaml
-
 git clone https://huggingface.co/h94/IP-Adapter 
+
+conda env create -f material_fusion_env.yaml
 ```
 Conda environment `material_fusion` will be created and you can use it.
 
