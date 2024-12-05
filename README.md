@@ -22,7 +22,7 @@ Conda environment `material_fusion` will be created and you can use it.
 
 ## Quickstart
 
-We provide examples of applying our pipeline to real image editing in the [notebook](examples_notebooks/matrial_transfer.ipynb).
+We provide examples of applying our pipeline to real image editing in the [notebook](examples_notebooks/material_transfer.ipynb).
 
 ## Method Diagram
 <p align="center">
