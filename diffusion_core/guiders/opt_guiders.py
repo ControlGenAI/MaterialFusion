@@ -60,7 +60,7 @@ class MidUL2EnergyGuider(BaseGuider):
     def calc_energy(self, data_dict):
         return torch.mean(torch.pow(data_dict['midu-l2_cur_trg'] - data_dict['midu-l2_inv_inv'], 2))
     
-    def model_patch(self, model):
+    def model_patch(self, model, self_attn_layers_num=None):
         def hook_fn(module, input, output):
             self.output = output 
         model.unet.mid_block.register_forward_hook(hook_fn)
@@ -76,7 +76,7 @@ class MidUL2EnergyGuider(BaseGuider):
     def calc_energy(self, data_dict):
         return torch.mean(torch.pow(data_dict['midu-src-l2_cur_inv'] - data_dict['midu-src-l2_inv_inv'], 2))
     
-    def model_patch(self, model):
+    def model_patch(self, model, self_attn_layers_num=None):
         def hook_fn(module, input, output):
             self.output = output
         model.unet.mid_block.register_forward_hook(hook_fn)
@@ -102,7 +102,7 @@ class AttentionPatchGuider(BaseGuider):
             "down_value_cross": [], "mid_value_cross": [], "up_value_cross": [],
         }
     
-    def model_patch(guider_self, model):
+    def model_patch(guider_self, model, self_attn_layers_num=None):
         if guider_self.patched:
             return
         
@@ -248,7 +248,7 @@ class AttnMapL2EnergyGuider(AttentionPatchGuider):
                     )
         return result
     
-    def model_patch(guider_self, model):
+    def model_patch(guider_self, model, self_attn_layers_num=None):
         def new_forward_info(self, place_unet):
             def patched_forward(
                 hidden_states,
@@ -342,7 +342,7 @@ class FeaturesMapL2EnergyGuider(BaseGuider):
     def calc_energy(self, data_dict):
         return torch.mean(torch.pow(data_dict['features_map_l2_cur_trg'] - data_dict['features_map_l2_inv_inv'], 2))
     
-    def model_patch(self, model):
+    def model_patch(self, model, self_attn_layers_num=None):
         def hook_fn(module, input, output):
             self.output = output 
         if self.block == 'mid':
@@ -378,7 +378,7 @@ class SelfAttnMapL2EnergyGuider(BaseGuider):
         self.single_output_clear()
         return result
     
-    def model_patch(guider_self, model):
+    def model_patch(guider_self, model, self_attn_layers_num=None):
         def new_forward_info(self, place_unet):
             def patched_forward(
                 hidden_states,
@@ -427,7 +427,7 @@ class SelfAttnMapL2EnergyGuider(BaseGuider):
                     guider_self.output[f"{place_unet}_self"].append(attention_probs)
                 hidden_states = torch.bmm(attention_probs, value)
                 hidden_states = self.batch_to_head_dim(hidden_states)
-
+                print("self attn map l2!!!!!!!!!!!!!!!!!")
                 # linear proj
                 hidden_states = self.to_out[0](hidden_states)
                 # dropout
@@ -444,22 +444,40 @@ class SelfAttnMapL2EnergyGuider(BaseGuider):
                 return hidden_states
             return patched_forward
         
-        def register_attn(module, place_in_unet):
-            if 'Attention' in module.__class__.__name__:
-                module.forward = new_forward_info(module, place_in_unet)
+        # def register_attn(module, place_in_unet):
+        #     if 'Attention' in module.__class__.__name__:
+        #         module.forward = new_forward_info(module, place_in_unet)
                 
+        #     elif hasattr(module, 'children'):
+        #         for module_ in module.children():
+        #             register_attn(module_, place_in_unet)
+        
+        # sub_nets = model.unet.named_children()
+        # for name, net in sub_nets:
+        #     if "down" in name:
+        #         register_attn(net, "down")
+        #     if "up" in name:
+        #         register_attn(net, "up")
+        #     if "mid" in name:
+        #         register_attn(net, "mid")
+        def register_attn(module, place_in_unet, layers_num, cur_layers_num=0):
+            if 'Attention' in module.__class__.__name__:
+                if 2 * layers_num[0] <= cur_layers_num < 2 * layers_num[1]:
+                    module.forward = new_forward_info(module, place_in_unet)
+                return cur_layers_num + 1
             elif hasattr(module, 'children'):
                 for module_ in module.children():
-                    register_attn(module_, place_in_unet)
+                    cur_layers_num = register_attn(module_, place_in_unet, layers_num, cur_layers_num)
+                return cur_layers_num
         
         sub_nets = model.unet.named_children()
         for name, net in sub_nets:
             if "down" in name:
-                register_attn(net, "down")
-            if "up" in name:
-                register_attn(net, "up")
+                register_attn(net, "down", self_attn_layers_num[0])
             if "mid" in name:
-                register_attn(net, "mid")
+                register_attn(net, "mid", self_attn_layers_num[1])
+            if "up" in name:
+                register_attn(net, "up", self_attn_layers_num[2])
 
 
 @opt_registry.add_to_registry('src_attn_map_appearance')
@@ -494,7 +512,7 @@ class AttnMapAppearanceEnergyGuider(BaseGuider):
 
         return result
     
-    def model_patch(guider_self, model):
+    def model_patch(guider_self, model, self_attn_layers_num=None):
         def new_forward_info_attn_map(self, place_unet):
             def patched_forward(
                 hidden_states,
@@ -619,7 +637,7 @@ class CrossAttnMapL2EnergyGuider(BaseGuider):
             self.mapper_orig = mapper != -1
             self.mapper_cur = mapper[mapper != -1]
     
-    def model_patch(guider_self, model):
+    def model_patch(guider_self, model, self_attn_layers_num=None):
         def new_forward_info(self, place_unet):
             def patched_forward(
                 hidden_states,
@@ -763,7 +781,7 @@ class SelfAttnMapL2withAppearanceEnergyGuider(BaseGuider):
         
         return _self_attn_gs * self_attn_result + _app_gs * app_result
     
-    def model_patch(guider_self, model):
+    def model_patch(guider_self, model, self_attn_layers_num=None):
         def new_forward_info(self, place_unet):
             def patched_forward(
                 hidden_states,
@@ -881,6 +899,7 @@ class SelfAttnMapL2withAppearanceEnergyGuider(BaseGuider):
                         ip_hidden_states = ip_hidden_states.to(query.dtype)
 
                         if ip_adapter_masks is not None:    #with ip_adapter mask
+                            print("with mask!!!!!!!!!!!!")
                             if not isinstance(ip_adapter_masks, List):
                                 ip_adapter_masks = list(ip_adapter_masks.unsqueeze(1))
    
@@ -950,20 +969,42 @@ class SelfAttnMapL2withAppearanceEnergyGuider(BaseGuider):
                         return hidden_states           
             return patched_forward
         
-        def register_attn(module, place_in_unet):
+        # def register_attn(module, place_in_unet):
+        #     if 'Attention' in module.__class__.__name__:
+        #         module.forward = new_forward_info(module, place_in_unet)
+        #     elif hasattr(module, 'children'):
+        #         for module_ in module.children():
+        #             register_attn(module_, place_in_unet)
+        # sub_nets = model.unet.named_children()
+        # for name, net in sub_nets:
+        #     if "down" in name:
+        #         register_attn(net, "down")
+        #     if "up" in name:
+        #         register_attn(net, "up")
+        #     if "mid" in name:
+        #         register_attn(net, "mid")
+        
+        def register_attn(module, place_in_unet, layers_num, cur_layers_num=0):
             if 'Attention' in module.__class__.__name__:
-                module.forward = new_forward_info(module, place_in_unet)
+                if 2 * layers_num[0] <= cur_layers_num < 2 * layers_num[1]:
+                    module.forward = new_forward_info(module, place_in_unet)
+                return cur_layers_num + 1
             elif hasattr(module, 'children'):
                 for module_ in module.children():
-                    register_attn(module_, place_in_unet)
+                    cur_layers_num = register_attn(module_, place_in_unet, layers_num, cur_layers_num)
+                return cur_layers_num
+        
         sub_nets = model.unet.named_children()
+        # print("self_attn_layers_num[0]",self_attn_layers_num[0])
+        # print("self_attn_layers_num[1]",self_attn_layers_num[1])
+        # print("self_attn_layers_num[2]",self_attn_layers_num[2])
         for name, net in sub_nets:
             if "down" in name:
-                register_attn(net, "down")
-            if "up" in name:
-                register_attn(net, "up")
+                register_attn(net, "down", self_attn_layers_num[0])
             if "mid" in name:
-                register_attn(net, "mid")
+                register_attn(net, "mid", self_attn_layers_num[1])
+            if "up" in name:
+                register_attn(net, "up", self_attn_layers_num[2])
         
         def hook_fn(module, input, output):
             guider_self.output["features"] = output

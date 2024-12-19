@@ -354,8 +354,9 @@ class IPAttnProcessor2_0(torch.nn.Module):
         hidden_states = hidden_states.transpose(1, 2).reshape(batch_size, -1, attn.heads * head_dim)
         hidden_states = hidden_states.to(query.dtype)
 
-        ip_key = self.to_k_ip(ip_hidden_states)
-        ip_value = self.to_v_ip(ip_hidden_states)
+        ip_key = self.to_k_ip(ip_hidden_states.clone())
+        ip_value = self.to_v_ip(ip_hidden_states.clone())
+        print("IPattn")
         ip_key = ip_key.view(batch_size, -1, attn.heads, head_dim).transpose(1, 2)
         ip_value = ip_value.view(batch_size, -1, attn.heads, head_dim).transpose(1, 2)
 

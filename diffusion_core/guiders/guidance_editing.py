@@ -21,6 +21,7 @@ from PIL import Image
 from torchvision import transforms
 import torch.nn.functional as F
 import torchvision.utils as vutils
+from diffusers.image_processor import IPAdapterMaskProcessor
 
 if is_torch2_available():
     from ip_adapter.attention_processor import (
@@ -96,6 +97,10 @@ class GuidanceEditing:
         for guider_name, (guider, _) in self.guiders.items():
             guider.clear_outputs()
         
+        self.self_attn_layers_num = config.get('self_attn_layers_num', [6, 1, 9])
+        if type(self.self_attn_layers_num[0]) is int:
+            for i in range(len(self.self_attn_layers_num)):
+                self.self_attn_layers_num[i] = (0, self.self_attn_layers_num[i])
         #ip-part
         self.device = device
         self.image_encoder_path = image_encoder_path
@@ -327,9 +332,10 @@ class GuidanceEditing:
             )
         else:
             raise ValueError('Incorrect start latent type')
+        
         for g_name, (guider, _) in self.guiders.items():
             if hasattr(guider, 'model_patch'):
-                guider.model_patch(self.model)
+                guider.model_patch(self.model, self_attn_layers_num=self.self_attn_layers_num)
 
         self.start_latent = self.inv_latents[-1].clone()
 
@@ -553,68 +559,254 @@ class GuidanceEditing:
         return all_latent
 
     def _model_unpatch(self, model):
+        # def new_forward_info(self):
+        #     def patched_forward(
+        #             hidden_states,
+        #             encoder_hidden_states=None,
+        #             attention_mask=None,
+        #             temb=None,
+        #     ):
+        #         residual = hidden_states
+
+        #         if self.spatial_norm is not None:
+        #             hidden_states = self.spatial_norm(hidden_states, temb)
+
+        #         input_ndim = hidden_states.ndim
+
+        #         if input_ndim == 4:
+        #             batch_size, channel, height, width = hidden_states.shape
+        #             hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
+
+        #         batch_size, sequence_length, _ = (
+        #             hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
+        #         )
+        #         attention_mask = self.prepare_attention_mask(attention_mask, sequence_length, batch_size)
+
+        #         if self.group_norm is not None:
+        #             hidden_states = self.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
+
+        #         query = self.to_q(hidden_states)
+
+        #         ## Injection
+        #         is_self = encoder_hidden_states is None
+
+        #         if encoder_hidden_states is None:
+        #             encoder_hidden_states = hidden_states
+        #         elif self.norm_cross:
+        #             encoder_hidden_states = self.norm_encoder_hidden_states(encoder_hidden_states)
+
+        #         key = self.to_k(encoder_hidden_states)
+        #         value = self.to_v(encoder_hidden_states)
+
+        #         query = self.head_to_batch_dim(query)
+        #         key = self.head_to_batch_dim(key)
+        #         value = self.head_to_batch_dim(value)
+
+        #         attention_probs = self.get_attention_scores(query, key, attention_mask)
+        #         hidden_states = torch.bmm(attention_probs, value)
+        #         hidden_states = self.batch_to_head_dim(hidden_states)
+
+        #         # linear proj
+        #         hidden_states = self.to_out[0](hidden_states)
+        #         # dropout
+        #         hidden_states = self.to_out[1](hidden_states)
+
+        #         if input_ndim == 4:
+        #             hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
+
+        #         if self.residual_connection:
+        #             hidden_states = hidden_states + residual
+
+        #         hidden_states = hidden_states / self.rescale_output_factor
+
+        #         return hidden_states
+
+        #     return patched_forward
         def new_forward_info(self):
             def patched_forward(
-                    hidden_states,
-                    encoder_hidden_states=None,
-                    attention_mask=None,
-                    temb=None,
+                hidden_states,
+                encoder_hidden_states=None,
+                attention_mask=None,
+                temb=None,
+                ip_adapter_masks: Optional[torch.Tensor] = None
             ):
-                residual = hidden_states
+                if encoder_hidden_states is None: #self-attn 
+                    residual = hidden_states
+                    if self.spatial_norm is not None:
+                        hidden_states = self.spatial_norm(hidden_states, temb)
 
-                if self.spatial_norm is not None:
-                    hidden_states = self.spatial_norm(hidden_states, temb)
+                    input_ndim = hidden_states.ndim
+                    if input_ndim == 4:
+                        batch_size, channel, height, width = hidden_states.shape
+                        hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
 
-                input_ndim = hidden_states.ndim
+                    batch_size, sequence_length, _ = (
+                        hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
+                    )
+                    attention_mask = self.prepare_attention_mask(attention_mask, sequence_length, batch_size)
 
-                if input_ndim == 4:
-                    batch_size, channel, height, width = hidden_states.shape
-                    hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
+                    if self.group_norm is not None:
+                        hidden_states = self.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
 
-                batch_size, sequence_length, _ = (
-                    hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
-                )
-                attention_mask = self.prepare_attention_mask(attention_mask, sequence_length, batch_size)
-
-                if self.group_norm is not None:
-                    hidden_states = self.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
-
-                query = self.to_q(hidden_states)
-
-                ## Injection
-                is_self = encoder_hidden_states is None
-
-                if encoder_hidden_states is None:
+                    query = self.to_q(hidden_states) 
                     encoder_hidden_states = hidden_states
-                elif self.norm_cross:
-                    encoder_hidden_states = self.norm_encoder_hidden_states(encoder_hidden_states)
+                    key = self.to_k(encoder_hidden_states)
+                    value = self.to_v(encoder_hidden_states)
 
-                key = self.to_k(encoder_hidden_states)
-                value = self.to_v(encoder_hidden_states)
+                    query = self.head_to_batch_dim(query)
+                    key = self.head_to_batch_dim(key)
+                    value = self.head_to_batch_dim(value)
+                    attention_probs = self.get_attention_scores(query, key, attention_mask)
+                       
+                    hidden_states = torch.bmm(attention_probs, value)
+                    hidden_states = self.batch_to_head_dim(hidden_states)
 
-                query = self.head_to_batch_dim(query)
-                key = self.head_to_batch_dim(key)
-                value = self.head_to_batch_dim(value)
+                    # linear proj
+                    hidden_states = self.to_out[0](hidden_states)
+                    # dropout
+                    hidden_states = self.to_out[1](hidden_states)
 
-                attention_probs = self.get_attention_scores(query, key, attention_mask)
-                hidden_states = torch.bmm(attention_probs, value)
-                hidden_states = self.batch_to_head_dim(hidden_states)
+                    if input_ndim == 4:
+                        hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
 
-                # linear proj
-                hidden_states = self.to_out[0](hidden_states)
-                # dropout
-                hidden_states = self.to_out[1](hidden_states)
+                    if self.residual_connection:
+                        hidden_states = hidden_states + residual
 
-                if input_ndim == 4:
-                    hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
+                    hidden_states = hidden_states / self.rescale_output_factor
+                    return hidden_states
+                else: # cross_attention 
+                    residual = hidden_states
+                    if self.spatial_norm is not None:
+                        hidden_states = self.spatial_norm(hidden_states, temb)
 
-                if self.residual_connection:
-                    hidden_states = hidden_states + residual
+                    input_ndim = hidden_states.ndim
 
-                hidden_states = hidden_states / self.rescale_output_factor
+                    if input_ndim == 4:
+                        batch_size, channel, height, width = hidden_states.shape
+                        hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
 
-                return hidden_states
+                    batch_size, sequence_length, _ = (
+                        hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
+                    )
 
+                    if attention_mask is not None:
+                        attention_mask = self.prepare_attention_mask(attention_mask, sequence_length, batch_size)
+                        attention_mask = attention_mask.view(batch_size, self.heads, -1, attention_mask.shape[-1])
+
+                    if self.group_norm is not None:
+                        hidden_states = self.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
+
+                    query = self.to_q(hidden_states)
+                    if encoder_hidden_states.shape[1] == self.processor.full_emb_size:
+                        if encoder_hidden_states is None:
+                            encoder_hidden_states = hidden_states
+                        else:
+                            end_pos = encoder_hidden_states.shape[1] - self.processor.num_tokens
+                            encoder_hidden_states, ip_hidden_states = (
+                                encoder_hidden_states[:, :end_pos, :],
+                                encoder_hidden_states[:, end_pos:, :],
+                            )
+                            if self.norm_cross:
+                                encoder_hidden_states = self.norm_encoder_hidden_states(encoder_hidden_states)
+
+                        key = self.to_k(encoder_hidden_states)
+                        value = self.to_v(encoder_hidden_states)
+
+                        inner_dim = key.shape[-1]
+                        head_dim = inner_dim // self.heads
+
+                        query = query.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+
+                        key = key.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+                        value = value.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+                        hidden_states = F.scaled_dot_product_attention(
+                            query, key, value, attn_mask=attention_mask, dropout_p=0.0, is_causal=False
+                        )
+
+                        hidden_states = hidden_states.transpose(1, 2).reshape(batch_size, -1, self.heads * head_dim)
+                        hidden_states = hidden_states.to(query.dtype)
+                        ip_key = self.processor.to_k_ip(ip_hidden_states.clone())
+                        ip_value = self.processor.to_v_ip(ip_hidden_states.clone())
+                        ip_key = ip_key.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+                        ip_value = ip_value.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+                        ip_hidden_states = F.scaled_dot_product_attention(
+                            query, ip_key, ip_value, attn_mask=None, dropout_p=0.0, is_causal=False
+                        )
+                        with torch.no_grad():
+                            self.attn_map = query @ ip_key.transpose(-2, -1).softmax(dim=-1)
+
+                        ip_hidden_states = ip_hidden_states.transpose(1, 2).reshape(batch_size, -1, self.heads * head_dim)
+                        ip_hidden_states = ip_hidden_states.to(query.dtype)
+
+                        if ip_adapter_masks is not None:    #with ip_adapter mask
+                            print("with mask!!!!!!!!!!!!")
+                            if not isinstance(ip_adapter_masks, List):
+                                ip_adapter_masks = list(ip_adapter_masks.unsqueeze(1))
+   
+                            for mask in ip_adapter_masks:
+                                mask_downsample = IPAdapterMaskProcessor.downsample(
+                                    mask[:, 0, :, :], # now we have mask only for 1 obj
+                                    batch_size,
+                                    ip_hidden_states.shape[1],
+                                    ip_hidden_states.shape[2],
+                                )
+                    
+                            mask_downsample = mask_downsample.to(dtype=query.dtype, device=query.device)
+                            hidden_states = hidden_states + self.processor.scale * ip_hidden_states * mask_downsample
+                        else:
+                            hidden_states = hidden_states + self.processor.scale * ip_hidden_states
+
+                        hidden_states = self.to_out[0](hidden_states)
+                        hidden_states = self.to_out[1](hidden_states)
+
+                        if input_ndim == 4:
+                            hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
+
+                        if self.residual_connection:
+                            hidden_states = hidden_states + residual
+
+                        hidden_states = hidden_states / self.rescale_output_factor
+
+                        return hidden_states  
+                    else:
+                        #without image cross-attention 
+                        if encoder_hidden_states is None:
+                            encoder_hidden_states = hidden_states
+                        else:
+                            if self.norm_cross:
+                                encoder_hidden_states = self.norm_encoder_hidden_states(encoder_hidden_states)
+
+                        key = self.to_k(encoder_hidden_states)
+                        value = self.to_v(encoder_hidden_states)
+
+                        inner_dim = key.shape[-1]
+                        head_dim = inner_dim // self.heads
+
+                        query = query.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+
+                        key = key.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+                        value = value.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+
+                        hidden_states = F.scaled_dot_product_attention(
+                            query, key, value, attn_mask=attention_mask, dropout_p=0.0, is_causal=False
+                        )
+
+                        hidden_states = hidden_states.transpose(1, 2).reshape(batch_size, -1, self.heads * head_dim)
+                        hidden_states = hidden_states.to(query.dtype)
+                        # linear proj
+                        hidden_states = self.to_out[0](hidden_states)
+                        # dropout
+                        hidden_states = self.to_out[1](hidden_states)
+
+                        if input_ndim == 4:
+                            hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
+
+                        if self.residual_connection:
+                            hidden_states = hidden_states + residual
+
+                        hidden_states = hidden_states / self.rescale_output_factor
+
+                        return hidden_states           
             return patched_forward
 
         def register_attn(module):

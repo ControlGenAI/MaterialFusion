@@ -1,0 +1,35 @@
+scheduler_type: ddim_50_eps
+inversion_type: dummy
+model_name: stable-diffusion-v1-5
+pipeline_type: ours
+start_latent: inversion
+verbose: false
+guiders:
+    - name: cfg
+      g_scale: 7.5
+      kwargs:
+        is_source_guidance: false
+    - name: self_attn_map_l2_appearance
+      g_scale: 1.
+      kwargs:
+        self_attn_gs: 700000. #300000.
+        app_gs: 1500. #500.
+        new_features: true
+        total_first_steps: 30
+noise_rescaling_setup:
+    type: range_other_on_cfg_norm
+    init_setup:
+        - 0.33
+        - 3.0
+edit_types: 
+    - animal-2-animal
+    # - face-in-the-wild
+    # - person-in-the-wild
+    # - pose
+    # - addition
+    # - dog2cat_10
+gradient_checkpointing: true
+self_attn_layers_num:
+    - [2, 6]
+    - [0, 1]
+    - [0, 4]

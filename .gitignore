@@ -12,6 +12,7 @@
 u2net.onnx
 /run_two_photos.sh
 /two_photos_gen.py
+/run_gpu_monitor.sh
 
 
 
