@@ -427,7 +427,6 @@ class SelfAttnMapL2EnergyGuider(BaseGuider):
                     guider_self.output[f"{place_unet}_self"].append(attention_probs)
                 hidden_states = torch.bmm(attention_probs, value)
                 hidden_states = self.batch_to_head_dim(hidden_states)
-                print("self attn map l2!!!!!!!!!!!!!!!!!")
                 # linear proj
                 hidden_states = self.to_out[0](hidden_states)
                 # dropout
@@ -899,7 +898,7 @@ class SelfAttnMapL2withAppearanceEnergyGuider(BaseGuider):
                         ip_hidden_states = ip_hidden_states.to(query.dtype)
 
                         if ip_adapter_masks is not None:    #with ip_adapter mask
-                            print("with mask!!!!!!!!!!!!")
+                            #print("with mask!!!!!!!!!!!!")
                             if not isinstance(ip_adapter_masks, List):
                                 ip_adapter_masks = list(ip_adapter_masks.unsqueeze(1))
    
@@ -995,9 +994,6 @@ class SelfAttnMapL2withAppearanceEnergyGuider(BaseGuider):
                 return cur_layers_num
         
         sub_nets = model.unet.named_children()
-        # print("self_attn_layers_num[0]",self_attn_layers_num[0])
-        # print("self_attn_layers_num[1]",self_attn_layers_num[1])
-        # print("self_attn_layers_num[2]",self_attn_layers_num[2])
         for name, net in sub_nets:
             if "down" in name:
                 register_attn(net, "down", self_attn_layers_num[0])
