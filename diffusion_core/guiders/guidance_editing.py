@@ -739,7 +739,7 @@ class GuidanceEditing:
                         ip_hidden_states = ip_hidden_states.to(query.dtype)
 
                         if ip_adapter_masks is not None:    #with ip_adapter mask
-                            print("with mask!!!!!!!!!!!!")
+                            #print("with mask!!!!!!!!!!!!")
                             if not isinstance(ip_adapter_masks, List):
                                 ip_adapter_masks = list(ip_adapter_masks.unsqueeze(1))
    
