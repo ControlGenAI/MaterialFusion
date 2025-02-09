@@ -5,9 +5,20 @@
 
 ![image](docs/teaser.JPG)
 
-## Setup
+## Updates
 
-We ran our code with Python 3.8.5, PyTorch 2.0.1, Diffusers 0.29.1 on NVIDIA V100 GPU with 40GB RAM.
+- [09/02/2025] 🔥🔥🔥 HairFastGAN release.
+
+## Prerequisites
+
+To run our method, please ensure you meet the following hardware and software requirements:
+- Operating System: Linux
+- GPU: NVIDIA V100 with 40GB RAM
+- Python Version: 3.8.5
+- PyTorch Version: 2.0.1
+- Diffusers Version: 0.29.1
+
+## Setup
 
 In order to setup the environment, run:
 ```
@@ -19,6 +30,27 @@ conda env create -f material_fusion_env.yaml
 ```
 Conda environment `material_fusion` will be created and you can use it.
 
+## Inference
+
+You can use `main.py` to execute the method.
+
+* Here’s an example of how to perform inference:
+```
+init_prompt="A photo of a car"                            
+edit_prompt="A photo of a car"                            
+transfer_force="0.1 0.5 0.8 1.0"                          
+obj_name="car"                                            
+obj_path="./example_images/objects/car.png"              
+material_image_path="./example_images/materials/4.jpg"   
+config_path='./configs/materialfusion_colab.yaml'        
+python main.py --init_prompt "$init_prompt" \
+--edit_prompt "$edit_prompt" \
+--transfer_force "$transfer_force" \
+--obj_name "$obj_name" \
+--obj_path "$obj_path" \
+--material_image_path "$material_image_path" \
+--config "$config_path"
+```
 
 ## Quickstart
 
