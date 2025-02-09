@@ -7,7 +7,7 @@
 
 ## Updates
 
-- [09/02/2025] 🔥🔥🔥 HairFastGAN release.
+- [09/02/2025] 🔥🔥🔥 MaterialFusion release.
 
 ## Prerequisites
 
@@ -65,3 +65,14 @@ We provide examples of applying our pipeline to real image editing in the [noteb
   <br>
 The overall pipeline of MaterialFusion for material transfer. Starting with DDIM inversion of the target image $x_{init}$ and material exemplar $y_{im}$, the framework combines the IP-Adapter with UNet and employs a guider energy function for precise material transfer. A dual-masking strategy ensures material application only on target regions while preserving background consistency, ultimately generating the edited output $x_{edit}$. The parameter $\lambda$, known as the Material Transfer Force, controls the intensity of the material application, enabling adjustment of the transfer effect according to user preference.
 </p>
+
+## References & Acknowledgments
+
+The repository was started from [Guide-and-Rescale](https://github.com/AIRI-Institute/Guide-and-Rescale).
+
+## Citation
+
+If you utilize this code in your research, kindly cite our paper:
+```
+@article{...}
+```
