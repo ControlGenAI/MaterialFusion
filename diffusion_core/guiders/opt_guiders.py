@@ -909,7 +909,7 @@ class SelfAttnMapL2withAppearanceEnergyGuider(BaseGuider):
                                     ip_hidden_states.shape[1],
                                     ip_hidden_states.shape[2],
                                 )
-                    
+                               
                             mask_downsample = mask_downsample.to(dtype=query.dtype, device=query.device)
                             hidden_states = hidden_states + self.processor.scale * ip_hidden_states * mask_downsample
                         else:
