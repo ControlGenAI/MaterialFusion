@@ -20,15 +20,22 @@ To run our method, please ensure you meet the following hardware and software re
 
 ## Setup
 
-In order to setup the environment, run:
+* Clone this repo:
+```bash
+git clone https://github.com/kzGarifullin/MaterialFusion.git
+cd MaterialFusion
 ```
+
+* Download IP-Adapter:
+```bash
 git lfs install
+git clone https://huggingface.co/h94/IP-Adapter
+```
 
-git clone https://huggingface.co/h94/IP-Adapter 
-
+* Setup the environment. Conda environment `material_fusion` will be created and you can use it.
+```bash
 conda env create -f material_fusion_env.yaml
 ```
-Conda environment `material_fusion` will be created and you can use it.
 
 ## Inference
 
