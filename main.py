@@ -23,6 +23,7 @@ parser.add_argument("--obj_name", type=str)
 parser.add_argument("--obj_path", type=str)
 parser.add_argument("--material_image_path", type=str)
 parser.add_argument("--transfer_force", type=str)
+parser.add_argument("--config", type=str)
 args = parser.parse_args()
 scales = [float(x) for x in args.transfer_force.split()]
 
@@ -46,9 +47,10 @@ ldm_stable = StableDiffusionPipeline.from_pretrained(
 ).to(device)
 ldm_stable.disable_xformers_memory_efficient_attention()
 ldm_stable.disable_xformers_memory_efficient_attention()
-config = OmegaConf.load('/configs/materialfusion_colab.yaml')
-image_encoder_path = "/IP-Adapter/models/image_encoder"
-ip_ckpt = "/IP-Adapter/models/ip-adapter_sd15.bin"
+#config = OmegaConf.load('./configs/materialfusion_colab.yaml')
+config = OmegaConf.load(args.config)
+image_encoder_path = "./IP-Adapter/models/image_encoder"
+ip_ckpt = "./IP-Adapter/models/ip-adapter_sd15.bin"
 guidance = GuidanceEditing(ldm_stable, config, image_encoder_path, ip_ckpt, device)
 print("guidance object loading is done!")
 
