@@ -60,7 +60,7 @@ obj_name="car"
 obj_path="./example_images/objects/car.png"              
 material_image_path="./example_images/materials/4.jpg"   
 config_path='./configs/materialfusion_colab.yaml' 
-       
+
 python main.py --init_prompt "$init_prompt" \
 --edit_prompt "$edit_prompt" \
 --transfer_force "$transfer_force" \
