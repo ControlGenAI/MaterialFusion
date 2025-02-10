@@ -39,9 +39,19 @@ conda env create -f material_fusion_env.yaml
 
 ## Inference
 
-You can use `main.py` to execute the method.
+You can use the `main.py` script to perform inference with the model. This allows you to generate visual outputs based on the provided prompts and parameters.
 
-* Here’s an example of how to perform inference:
+### Parameters 
+
+- `init_prompt`: A text description of the content in the original image (e.g. "A photo of a car").
+- `edit_prompt`: A text description of what you expect in the output image (e.g. "A photo of a golden car"). It is possible to use  $y_{src}$  instead of  $y_{trg}$ . Material transfer is successful regardless of whether the target prompt is present or not(i.e. when  $y_{trg}=y_{src}$ ). However, the presence of the target prompt facilitates easier material transfer.
+- `transfer_force`: The strength of the transfer effects applied, specified as a space-separated list of floats (e.g., "0.1 0.5 0.8 1.0").
+- `obj_name`: The name of the object, which is used for naming the output images (e.g. "car").
+- `obj_path`: The file path to the image of the object (e.g. `./example_images/objects/car.png`).
+- `material_image_path`: The path to the material image(e.g. `./example_images/materials/4.jpg`).
+- `config_path`: The path to the configuration file used for the model (e.g. `./configs/materialfusion_colab.yaml`). For transferring in Colab, the colab configuration works well; however, if your hardware allows, it's better to use the 'best' configuration. 
+
+### Here’s an example of how to perform inference:
 ```
 init_prompt="A photo of a car"                            
 edit_prompt="A photo of a car"                            
@@ -49,7 +59,8 @@ transfer_force="0.1 0.5 0.8 1.0"
 obj_name="car"                                            
 obj_path="./example_images/objects/car.png"              
 material_image_path="./example_images/materials/4.jpg"   
-config_path='./configs/materialfusion_colab.yaml'        
+config_path='./configs/materialfusion_colab.yaml' 
+       
 python main.py --init_prompt "$init_prompt" \
 --edit_prompt "$edit_prompt" \
 --transfer_force "$transfer_force" \
