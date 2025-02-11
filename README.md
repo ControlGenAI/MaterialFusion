@@ -102,6 +102,7 @@ If you utilize this code in your research, kindly cite our paper:
   author={Kamil Garifullin and Maxim Nikolaev and Andrey Kuznetsov and Aibek Alanov},
   journal={arXiv preprint arXiv:2502.06606},
  year={2025}
-}```
+}
+```
 
 
