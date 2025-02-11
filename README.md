@@ -1,5 +1,10 @@
 # MaterialFusion: High-Quality, Zero-Shot, and Controllable Material Transfer with Diffusion Models
 
+<a href="https://arxiv.org/abs/2502.06606"><img src="https://img.shields.io/badge/arXiv-2502.06606-b31b1b.svg" height=22.5></a>
+<a href="https://colab.research.google.com/drive/1xkRLp5vAjv0DnVSP6Vf5xH_WPyczHSyt?usp=sharing"><img src="https://colab.research.google.com/assets/colab-badge.svg" height=22.5></a>
+[![License](https://img.shields.io/github/license/AIRI-Institute/al_toolbox)](./LICENSE)
+
+
 >Manipulating the material appearance of objects in images is critical for applications like augmented reality, virtual prototyping, and digital content creation. We present MaterialFusion, a novel framework for high-quality material transfer that allows users to adjust the degree of material application, achieving an optimal balance between new material properties and the object's original features. MaterialFusion seamlessly integrates the modified object into the scene by maintaining background consistency and mitigating boundary artifacts. To thoroughly evaluate our approach, we have compiled a dataset of real-world material transfer examples and conducted complex comparative analyses. Through comprehensive quantitative evaluations and user studies, we demonstrate that MaterialFusion significantly outperforms existing methods in terms of quality, user control, and background preservation.
 >
 
@@ -92,5 +97,11 @@ The repository was started from [Guide-and-Rescale](https://github.com/AIRI-Inst
 
 If you utilize this code in your research, kindly cite our paper:
 ```
-@article{...}
-```
+@article{garifullin2025materialfusion,
+  title={MaterialFusion: High-Quality, Zero-Shot, and Controllable Material Transfer with Diffusion Models},
+  author={Kamil Garifullin and Maxim Nikolaev and Andrey Kuznetsov and Aibek Alanov},
+  journal={arXiv preprint arXiv:2502.06606},
+ year={2025}
+}```
+
+
