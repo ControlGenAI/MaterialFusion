@@ -27,7 +27,7 @@ To run our method, please ensure you meet the following hardware and software re
 
 * Clone this repo:
 ```bash
-git clone https://github.com/kzGarifullin/MaterialFusion.git
+git clone https://github.com/ControlGenAI/MaterialFusion.git
 cd MaterialFusion
 ```
 
