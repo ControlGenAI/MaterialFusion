@@ -12,6 +12,7 @@
 
 ## Updates
 
+- [27/02/2025] 🎉🎉🎉 MaterialFusion has been accepted by CVPR 2025.
 - [09/02/2025] 🔥🔥🔥 MaterialFusion release.
 
 ## Prerequisites
